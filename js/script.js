@@ -35,15 +35,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const closeMenuBtn = document.getElementById('close-side-menu');
         const sideMenu = document.getElementById('add-printer-menu');
         const overlay = document.getElementById('overlay');
+        const mainContent = document.querySelector('main');
 
         const openMenu = () => {
             sideMenu.classList.add('open');
             overlay.classList.add('active');
+            mainContent.classList.add('shifted');
         };
 
         const closeMenu = () => {
             sideMenu.classList.remove('open');
             overlay.classList.remove('active');
+            mainContent.classList.remove('shifted');
         };
 
         openMenuBtn.addEventListener('click', openMenu);
