@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Impressoras e Suprimentos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header class="main-header">
+        <a href="index.html" class="logo"><img src="imagens/logo.png" alt="Gestão de Impressoras"></a>
+        <nav class="main-nav">
+            <button class="hamburger" aria-label="Abrir menu">
+                <div class="bar1"></div>
+                <div class="bar2"></div>
+                <div class="bar3"></div>
+            </button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="impressora.html">Impressoras</a></li>
+                <li><a href="toner.html">Toner</a></li>
+                <li><a href="unidadeimagem.html">Unidade de Imagem</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <div class="main-content">
+            <button id="open-side-menu" class="btn-primary">Adicionar Impressora</button>
+            <h1>Impressoras</h1>
+            <div id="printer-list" class="printer-grid"></div>
+            <!-- O conteúdo da página de impressoras viria aqui -->
+        </div>
+    </main>
+    <aside id="add-printer-menu" class="side-menu">
+        <div class="side-menu-header">
+            <h2>Adicionar Impressora</h2>
+            <button id="close-side-menu" class="close-btn">&times;</button>
+        </div>
+        <div class="side-menu-content">
+            <form id="add-printer-form">
+                <div class="form-group">
+                    <label for="printer-name">Nome da Impressora</label>
+                    <input type="text" id="printer-name" name="printer-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="printer-model">Modelo</label>
+                    <input type="text" id="printer-model" name="printer-model" required>
+                </div>
+                <div class="form-group">
+                    <label for="printer-sector">Setor</label>
+                    <input type="text" id="printer-sector" name="printer-sector">
+                </div>
+                <div class="form-group">
+                    <label for="printer-ip">Endereço IP</label>
+                    <input type="text" id="printer-ip" name="printer-ip">
+                </div>
+                <button type="submit" class="btn-primary">Salvar</button>
+            </form>
+        </div>
+    </aside>
+    <div id="overlay" class="overlay"></div>
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-row">
+                <div class="footer-col">
+                    <img src="imagens/logo.png" alt="Logo" class="footer-logo">
+                    <p>Software de gestão de impressoras e suprimentos.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Siga-nos</h4>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Gestão de Impressoras. Todos os direitos reservados. Desenvolvido por Diego José Rosa da Silva.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="js/script.js"></script>
+</body>
+</html>
