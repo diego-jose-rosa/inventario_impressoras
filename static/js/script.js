@@ -53,20 +53,61 @@ document.addEventListener('DOMContentLoaded', () => {
         closeMenuBtn.addEventListener('click', closeMenu);
         overlay.addEventListener('click', closeMenu);
 
-        // Carregar impressoras do localStorage
-        const printers = JSON.parse(localStorage.getItem('printers')) || [];
-        console.log("Impressoras carregadas do localStorage:", printers);
+        addPrinterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            console.log("Formulário enviado.");
 
-        const renderPrinters = () => {
+            const formData = new FormData(addPrinterForm);
+            
+            fetch('/salvar_impressora', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.erro) {
+                    alert('Erro ao salvar impressora: ' + data.erro);
+                } else {
+                    console.log("Impressora salva no banco de dados.");
+                    loadPrinters(); // Recarrega a lista de impressoras
+                    addPrinterForm.reset();
+                    closeMenu();
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                alert('Ocorreu um erro ao tentar salvar a impressora.');
+            });
+        });
+
+        // Carrega as impressoras do backend
+        const loadPrinters = () => {
+            console.log("Carregando impressoras do backend...");
+            fetch('/listar_impressoras')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.erro) {
+                        alert('Erro ao carregar impressoras: ' + data.erro);
+                    } else {
+                        renderPrinters(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na requisição:', error);
+                    alert('Ocorreu um erro ao tentar carregar as impressoras.');
+                });
+        };
+        
+        const renderPrinters = (printers) => {
             console.log("Renderizando impressoras na página...");
             printerListContainer.innerHTML = '';
-            printers.forEach((printer, index) => {
-                addPrinterToDOM(printer, index);
+            printers.forEach((printer) => {
+                addPrinterToDOM(printer);
             });
             console.log("Renderização concluída.");
         };
 
-        const addPrinterToDOM = (printer, index) => {
+        const addPrinterToDOM = (printer) => {
             const printerCard = document.createElement('a');
             printerCard.classList.add('printer-card');
             
@@ -78,59 +119,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
             printerCard.innerHTML = `
                 <div class="printer-card-image">
-                    <button class="delete-btn" data-index="${index}">&times;</button>
-                    <img src="imagens/impressora.png" alt="Imagem da Impressora">
+                    <button class="delete-btn" data-id="${printer.id}">&times;</button>
+                    <img src="/static/imagens/impressora.png" alt="Imagem da Impressora">
                 </div>
                 <div class="printer-card-info">
-                    <h3>${printer.name}</h3>
-                    <p><strong>Modelo:</strong> ${printer.model}</p>
-                    <p><strong>Setor:</strong> ${printer.sector}</p>
+                    <h3>${printer.nome}</h3>
+                    <p><strong>Modelo:</strong> ${printer.modelo}</p>
+                    <p><strong>Setor:</strong> ${printer.setor}</p>
                     <p><strong>IP:</strong> ${printer.ip}</p>
                 </div>
             `;
 
             const deleteBtn = printerCard.querySelector('.delete-btn');
             deleteBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // Impede a navegação ao clicar no X
-                e.stopPropagation(); // Impede que o clique se propague para o card
+                e.preventDefault();
+                e.stopPropagation();
 
-                const printerIndex = parseInt(e.target.dataset.index, 10);
+                const printerId = e.target.dataset.id;
                 
-                // Confirmação antes de excluir
-                if (confirm(`Tem certeza que deseja excluir a impressora "${printers[printerIndex].name}"?`)) {
-                    printers.splice(printerIndex, 1); // Remove do array
-                    localStorage.setItem('printers', JSON.stringify(printers)); // Atualiza o localStorage
-                    renderPrinters(); // Renderiza a lista novamente
+                if (confirm(`Tem certeza que deseja excluir a impressora "${printer.nome}"?`)) {
+                    fetch(`/impressora/excluir/${printerId}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.erro) {
+                            alert('Erro ao excluir impressora: ' + data.erro);
+                        } else {
+                            console.log("Impressora excluída do banco de dados.");
+                            loadPrinters();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro na requisição:', error);
+                        alert('Ocorreu um erro ao tentar excluir a impressora.');
+                    });
                 }
             });
 
             printerListContainer.appendChild(printerCard);
         };
 
-        addPrinterForm.addEventListener('submit', (e) => {
-            console.log("Formulário enviado.");
-            e.preventDefault();
-
-            const newPrinter = {
-                name: e.target.elements['printer-name'].value,
-                model: e.target.elements['printer-model'].value,
-                sector: e.target.elements['printer-sector'].value,
-                ip: e.target.elements['printer-ip'].value,
-            };
-            console.log("Nova impressora:", newPrinter);
-
-            printers.push(newPrinter);
-            localStorage.setItem('printers', JSON.stringify(printers));
-            console.log("Impressora salva no localStorage.");
-            
-            renderPrinters(); // Re-renderiza a lista inteira para manter os índices corretos
-
-            addPrinterForm.reset();
-            closeMenu();
-        });
-
-        // Renderiza as impressoras já salvas ao carregar a página
-        renderPrinters();
+        // Carrega as impressoras ao iniciar a página
+        loadPrinters();
     } else {
         console.log("Erro: Formulário 'add-printer-form' ou contêiner 'printer-list' não encontrado. A lógica da página de impressoras não será executada.");
     }
