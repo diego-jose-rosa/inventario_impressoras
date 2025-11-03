@@ -1,29 +1,36 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import mysql.connector
+from mysql.connector import pooling
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
 
 db_config = {
-    "host": "localhost",
-    "user": "root",
-    "password": "",
-    "database": "gestao_impressoras"
+    "host": os.getenv("DB_HOST"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "database": os.getenv("DB_NAME")
 }
 
-def conectar_banco():
-    try:
-        return mysql.connector.connect(**db_config)
-    except mysql.connector.Error as err:
-        print(f"Erro de conexão com o banco de dados: {err}")
-        return None
+try:
+    pool = mysql.connector.pooling.MySQLConnectionPool(pool_name="mypool",
+                                                     pool_size=5,
+                                                     **db_config)
+    print("Connection pool created successfully.")
+except mysql.connector.Error as err:
+    print(f"Error creating connection pool: {err}")
+    pool = None
 
 def executar_query(query, params=None, fetch=None):
     conn = None
     cursor = None
     try:
-        conn = conectar_banco()
+        conn = pool.get_connection()
         if conn is None:
             return None, "Não foi possível conectar ao banco de dados."
         
@@ -60,6 +67,10 @@ def toner():
 def unidadeimagem():
     return render_template("unidadeimagem.html")
 
+@app.route("/computador")
+def computador():
+    return render_template("computador.html")
+
 @app.route("/salvar_impressora", methods=["POST"])
 def salvar_impressora():
     data = request.form
@@ -75,6 +86,22 @@ def salvar_impressora():
         return jsonify({"erro": erro}), 500
     return jsonify({"mensagem": "Impressora salva com sucesso!"}), 200
 
+@app.route("/salvar_computador", methods=["POST"])
+def salvar_computador():
+    data = request.form
+    marca = data.get("computer-brand")
+    modelo = data.get("computer-model")
+    patrimonio = data.get("computer-asset")
+    serialnumber = data.get("computer-serial")
+    setor = data.get("computer-sector")
+
+    sql = "INSERT INTO computadores (marca, modelo, patrimonio, serialnumber, setor) VALUES (%s, %s, %s, %s, %s)"
+    _, erro = executar_query(sql, (marca, modelo, patrimonio, serialnumber, setor))
+
+    if erro:
+        return jsonify({"erro": erro}), 500
+    return jsonify({"mensagem": "Computador salvo com sucesso!"}), 200
+
 @app.route("/listar_impressoras", methods=["GET"])
 def listar_impressoras():
     impressoras, erro = executar_query("SELECT * FROM impressoras ORDER BY nome", fetch='all')
@@ -82,9 +109,20 @@ def listar_impressoras():
         return jsonify({"erro": erro}), 500
     return jsonify(impressoras)
 
+@app.route("/listar_computadores", methods=["GET"])
+def listar_computadores():
+    computadores, erro = executar_query("SELECT * FROM computadores", fetch='all')
+    if erro:
+        return jsonify({"erro": erro}), 500
+    return jsonify(computadores)
+
 @app.route("/inventario/<tipo>", methods=["GET"])
 def get_inventario(tipo):
-    tabela = 'toners' if tipo == 'toner' else 'unidades_imagem'
+    tabelas = {"toner": "toners", "unidadeimagem": "unidadeimagem"}
+    tabela = tabelas.get(tipo)
+    if not tabela:
+        return jsonify({"erro": "Tipo de inventário inválido"}), 400
+
     query = f"SELECT * FROM {tabela} ORDER BY modelo"
     items, erro = executar_query(query, fetch='all')
     
@@ -103,7 +141,10 @@ def atualizar_inventario():
     if not all([item_id, tipo_item, coluna, isinstance(nova_quantidade, int)]):
         return jsonify({"erro": "Dados inválidos."}), 400
 
-    tabela = 'toners' if tipo_item == 'toner' else 'unidades_imagem'
+    tabelas = {"toner": "toners", "unidadeimagem": "unidadeimagem"}
+    tabela = tabelas.get(tipo_item)
+    if not tabela:
+        return jsonify({"erro": "Tipo de item inválido"}), 400
     
     query = f"UPDATE {tabela} SET {coluna} = %s WHERE id = %s"
     _, erro = executar_query(query, (nova_quantidade, item_id))

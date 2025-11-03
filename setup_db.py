@@ -1,7 +1,11 @@
 import mysql.connector
 from mysql.connector import errorcode
+import os
+from dotenv import load_dotenv
 
-DB_NAME = 'gestao_impressoras'
+load_dotenv()
+
+DB_NAME = os.getenv("DB_NAME")
 
 TABLES = {}
 TABLES['impressoras'] = (
@@ -14,23 +18,34 @@ TABLES['impressoras'] = (
     "  PRIMARY KEY (`id`)"
     ") ENGINE=InnoDB")
 
-TABLES['toners'] = ("""
-    CREATE TABLE `toners` (
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `modelo` varchar(255) NOT NULL,
-    `quantidade_novo` int(11) NOT NULL DEFAULT 0,
-    `quantidade_usado` int(11) NOT NULL DEFAULT 0,
-    PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB""")
+TABLES['toners'] = (
+    "CREATE TABLE `toners` ("
+    "  `id` int(11) NOT NULL AUTO_INCREMENT,"
+    "  `modelo` varchar(255) NOT NULL,"
+    "  `quantidade_novo` int(11) NOT NULL DEFAULT 0,"
+    "  `quantidade_usado` int(11) NOT NULL DEFAULT 0,"
+    "  PRIMARY KEY (`id`)"
+    ") ENGINE=InnoDB")
 
-TABLES['unidades_imagem'] = ("""
-    CREATE TABLE `unidades_imagem` (
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `modelo` varchar(255) NOT NULL,
-    `quantidade_novo` int(11) NOT NULL DEFAULT 0,
-    `quantidade_usado` int(11) NOT NULL DEFAULT 0,
-    PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB""")
+TABLES['unidadeimagem'] = (
+    "CREATE TABLE `unidadeimagem` ("
+    "  `id` int(11) NOT NULL AUTO_INCREMENT,"
+    "  `modelo` varchar(255) NOT NULL,"
+    "  `quantidade_novo` int(11) NOT NULL DEFAULT 0,"
+    "  `quantidade_usado` int(11) NOT NULL DEFAULT 0,"
+    "  PRIMARY KEY (`id`)"
+    ") ENGINE=InnoDB")
+
+TABLES['computadores'] = (
+    "CREATE TABLE `computadores` ("
+    "  `id` int(11) NOT NULL AUTO_INCREMENT,"
+    "  `marca` varchar(255) NOT NULL,"
+    "  `modelo` varchar(255) NOT NULL,"
+    "  `patrimonio` varchar(255) DEFAULT NULL,"
+    "  `serialnumber` varchar(255) DEFAULT NULL,"
+    "  `setor` varchar(255) DEFAULT NULL,"
+    "  PRIMARY KEY (`id`)"
+    ") ENGINE=InnoDB")
 
 def create_database(cursor):
     try:
@@ -44,9 +59,9 @@ def main():
     try:
         # Conectar sem especificar o banco de dados inicialmente
         cnx = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password=""
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD")
         )
         cursor = cnx.cursor()
 
@@ -91,18 +106,18 @@ def main():
             cnx.commit()
             print("Dados inseridos em 'toners'.")
 
-        cursor.execute("SELECT COUNT(*) FROM unidades_imagem")
+        cursor.execute("SELECT COUNT(*) FROM unidadeimagem")
         if cursor.fetchone()[0] == 0:
-            print("Populando a tabela 'unidades_imagem' com dados iniciais...")
+            print("Populando a tabela 'unidadeimagem' com dados iniciais...")
             initial_imaging_units = [
                 ('DR-3440', 0, 0),
                 ('DR-2340', 0, 0),
                 ('DR-1060', 0, 0)
             ]
-            query = "INSERT INTO unidades_imagem (modelo, quantidade_novo, quantidade_usado) VALUES (%s, %s, %s)"
+            query = "INSERT INTO unidadeimagem (modelo, quantidade_novo, quantidade_usado) VALUES (%s, %s, %s)"
             cursor.executemany(query, initial_imaging_units)
             cnx.commit()
-            print("Dados inseridos em 'unidades_imagem'.")
+            print("Dados inseridos em 'unidadeimagem'.")
 
         cursor.close()
         cnx.close()
