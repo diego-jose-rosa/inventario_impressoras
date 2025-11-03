@@ -3,19 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Equipamentos e Suprimentos de TI</title>
+    <title>Gestão de Unidades de Imagem</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/unidadeimagem.css', v='1.1') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <header class="main-header">
         <a href="{{ url_for('index') }}" class="logo"><img src="{{ url_for('static', filename='imagens/logo.png') }}" alt="Gestão de Impressoras"></a>
         <nav class="main-nav">
-            <button class="hamburger" aria-label="Abrir menu">
-                <div class="bar1"></div>
-                <div class="bar2"></div>
-                <div class="bar3"></div>
-            </button>
             <ul class="nav-links">
                 <li><a href="{{ url_for('index') }}">Impressoras</a></li>
                 <li><a href="{{ url_for('toner') }}">Toner</a></li>
@@ -24,83 +20,171 @@
             </ul>
         </nav>
     </header>
-
     <main>
-        <div class="main-content">
+        <div class="content-header">
+            <button id="open-side-menu" class="btn-primary">Adicionar Unidade de Imagem</button>
             <h1>Controle de Estoque de Unidades de Imagem</h1>
-            <div class="inventory-section">
-                <table id="imaging-unit-table" class="inventory-table">
+            
+            <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+                <table class="responsive-table">
                     <thead>
                         <tr>
                             <th>Modelo</th>
-                            <th>Novas</th>
-                            <th>Usadas</th>
+                            <th>Quantidade Nova</th>
+                            <th>Quantidade Usada</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="4" class="loading-message">Carregando... A tabela será preenchida em instantes.</td>
-                        </tr>
+                        {% if unidades %}
+                            {% for unidade in unidades %}
+                            <tr>
+                                <td data-label="Modelo">{{ unidade.modelo }}</td>
+                                <td data-label="Quantidade Nova">{{ unidade.quantidade_novo }}</td>
+                                <td data-label="Quantidade Usada">{{ unidade.quantidade_usado }}</td>
+                                <td data-label="Ações">
+                                    <div class="action-buttons">
+                                        <button class="edit-btn" data-id="{{ unidade.id }}"><i class="fas fa-edit"></i> Editar</button>
+                                        <button class="delete-btn" data-id="{{ unidade.id }}"><i class="fas fa-trash"></i> Excluir</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" style="text-align: center;">Nenhuma unidade de imagem cadastrada.</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
-
-    <!-- Modal para Adicionar/Remover Estoque -->
-    <div id="inventory-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2 id="modal-title"></h2>
-            <form id="inventory-form">
-                <input type="hidden" id="item-id">
-                <input type="hidden" id="item-type">
-                <input type="hidden" id="action-type">
-                
+    <aside id="add-item-menu" class="side-menu">
+        <div class="side-menu-header">
+            <h2>Adicionar Unidade de Imagem</h2>
+            <button id="close-side-menu" class="close-btn">&times;</button>
+        </div>
+        <div class="side-menu-content">
+            <form id="add-item-form">
+                <input type="hidden" id="item-id" name="item-id">
                 <div class="form-group">
-                    <label for="item-quantity">Quantidade:</label>
-                    <input type="number" id="item-quantity" min="1" value="1" required>
+                    <label for="item-model">Modelo</label>
+                    <input type="text" id="item-model" name="item-model" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="item-condition">Condição:</label>
-                    <select id="item-condition" required>
-                        <option value="new">Nova</option>
-                        <option value="used">Usada</option>
-                    </select>
+                    <label for="item-new-quantity">Quantidade Nova</label>
+                    <input type="number" id="item-new-quantity" name="item-new-quantity" required>
                 </div>
-                
-                <div class="form-actions">
-                    <button type="button" id="confirm-action" class="btn-confirm">Confirmar</button>
+                <div class="form-group">
+                    <label for="item-used-quantity">Quantidade Usada</label>
+                    <input type="number" id="item-used-quantity" name="item-used-quantity" required>
                 </div>
+                <button type="submit" class="btn-primary">Salvar</button>
             </form>
         </div>
-    </div>
-
+    </aside>
+    <div id="overlay" class="overlay"></div>
     <footer class="footer">
-        <div class="footer-container">
-             <div class="footer-row">
-                <div class="footer-col">
-                    <img src="{{ url_for('static', filename='imagens/logo.png') }}" alt="Logo" class="footer-logo">
-                    <p>Software de gestão de impressoras e suprimentos.</p>
-                </div>
-                <div class="footer-col">
-                    <h4>Siga-nos</h4>
-                    <div class="social-links">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                    </div>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 Gestão de Impressoras. Todos os direitos reservados. Desenvolvido por Diego José Rosa da Silva.</p>
-            </div>
-        </div>
+        <p>&copy; 2025 Gestão de Impressoras. Todos os direitos reservados.</p>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const openMenuBtn = document.getElementById('open-side-menu');
+            const closeMenuBtn = document.getElementById('close-side-menu');
+            const sideMenu = document.getElementById('add-item-menu');
+            const overlay = document.getElementById('overlay');
+            const addItemForm = document.getElementById('add-item-form');
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+            const openMenu = () => {
+                sideMenu.classList.add('open');
+                overlay.classList.add('active');
+            };
+
+            const closeMenu = () => {
+                sideMenu.classList.remove('open');
+                overlay.classList.remove('active');
+            };
+
+            openMenuBtn.addEventListener('click', openMenu);
+            closeMenuBtn.addEventListener('click', closeMenu);
+            overlay.addEventListener('click', closeMenu);
+
+            addItemForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(addItemForm);
+                const itemId = document.getElementById('item-id').value;
+                
+                let url = '/salvar_unidadeimagem';
+                let method = 'POST';
+
+                if (itemId) {
+                    formData.append('item-id', itemId);
+                }
+
+                fetch(url, {
+                    method: method,
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.erro) {
+                        alert('Erro ao salvar unidade de imagem: ' + data.erro);
+                    } else {
+                        alert(data.mensagem);
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na requisição:', error);
+                    alert('Ocorreu um erro na requisição.');
+                });
+            });
+
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const itemId = e.target.dataset.id;
+                    const row = e.target.closest('tr');
+                    const modelo = row.querySelector('[data-label="Modelo"]').textContent;
+                    const quantidadeNova = row.querySelector('[data-label="Quantidade Nova"]').textContent;
+                    const quantidadeUsada = row.querySelector('[data-label="Quantidade Usada"]').textContent;
+
+                    document.getElementById('item-id').value = itemId;
+                    document.getElementById('item-model').value = modelo;
+                    document.getElementById('item-new-quantity').value = quantidadeNova;
+                    document.getElementById('item-used-quantity').value = quantidadeUsada;
+
+                    document.querySelector('#add-item-menu h2').textContent = 'Editar Unidade de Imagem';
+                    addItemForm.querySelector('button[type="submit"]').textContent = 'Atualizar';
+
+                    openMenu();
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const itemId = e.target.dataset.id;
+                    if (confirm('Tem certeza que deseja excluir esta unidade de imagem?')) {
+                        fetch(`/excluir_unidadeimagem/${itemId}`, {
+                            method: 'DELETE'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.erro) {
+                                alert('Erro ao excluir unidade de imagem: ' + data.erro);
+                            } else {
+                                alert(data.mensagem);
+                                location.reload();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro na requisição:', error);
+                            alert('Ocorreu um erro ao tentar excluir a unidade de imagem.');
+                        });
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

@@ -154,28 +154,7 @@ h1 {
     position: relative; /* Necessário para posicionar o botão de excluir */
 }
 
-.delete-btn {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    width: 25px;
-    height: 25px;
-    background-color: rgba(0,0,0,0.5);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    line-height: 1;
-    transition: background-color 0.3s;
-}
 
-.delete-btn:hover {
-    background-color: #e74c3c; /* Vermelho ao passar o mouse */
-}
 
 .printer-card-image img {
     max-height: 75px; /* 50% da altura do contêiner */

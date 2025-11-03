@@ -57,19 +57,60 @@ def executar_query(query, params=None, fetch=None):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # Buscar impressoras diretamente do banco de dados para exibir na página inicial
+    impressoras, erro = executar_query("SELECT * FROM impressoras ORDER BY nome", fetch='all')
+    if erro:
+        print(f"Erro ao buscar impressoras: {erro}")
+        impressoras = []
+    return render_template("index.html", impressoras=impressoras)
+
+@app.route("/impressora")
+def impressora():
+    # Buscar impressoras diretamente do banco de dados para garantir que sejam exibidas
+    impressoras, erro = executar_query("SELECT * FROM impressoras ORDER BY nome", fetch='all')
+    if erro:
+        print(f"Erro ao buscar impressoras: {erro}")
+        impressoras = []
+    else:
+        print(f"Impressoras encontradas: {len(impressoras)}")
+        for imp in impressoras:
+            print(f"Impressora: {imp}")
+    return render_template("impressora.html", impressoras=impressoras)
+
+@app.route("/impressora/<int:impressora_id>")
+def obter_impressora(impressora_id):
+    impressora, erro = executar_query("SELECT * FROM impressoras WHERE id = %s", (impressora_id,), fetch='one')
+    if erro:
+        return jsonify({"erro": f"Erro ao buscar impressora: {erro}"})
+    if not impressora:
+        return jsonify({"erro": "Impressora não encontrada"})
+    return jsonify(impressora)
 
 @app.route("/toner")
 def toner():
-    return render_template("toner.html")
+    # Buscar toners diretamente do banco de dados
+    toners, erro = executar_query("SELECT id, modelo, impressora, cor, quantidade_novo, quantidade_usado FROM toners ORDER BY modelo", fetch='all')
+    if erro:
+        print(f"Erro ao buscar toners: {erro}")
+        toners = []
+    return render_template("toner.html", toners=toners)
 
 @app.route("/unidadeimagem")
 def unidadeimagem():
-    return render_template("unidadeimagem.html")
+    # Buscar unidades de imagem diretamente do banco de dados
+    unidades, erro = executar_query("SELECT * FROM unidadeimagem ORDER BY modelo", fetch='all')
+    if erro:
+        print(f"Erro ao buscar unidades de imagem: {erro}")
+        unidades = []
+    return render_template("unidadeimagem.html", unidades=unidades)
 
 @app.route("/computador")
 def computador():
-    return render_template("computador.html")
+    computadores, erro = executar_query("SELECT * FROM computadores ORDER BY marca", fetch='all')
+    if erro:
+        print(f"Erro ao buscar computadores: {erro}")
+        computadores = []
+    return render_template("computador.html", computadores=computadores)
 
 @app.route("/salvar_impressora", methods=["POST"])
 def salvar_impressora():
@@ -78,6 +119,9 @@ def salvar_impressora():
     modelo = data.get("printer-model")
     setor = data.get("printer-sector")
     ip = data.get("printer-ip")
+
+    if not all([nome, modelo, setor, ip]):
+        return jsonify({"erro": "Todos os campos são obrigatórios!"}), 400
 
     sql = "INSERT INTO impressoras (nome, modelo, setor, ip) VALUES (%s, %s, %s, %s)"
     _, erro = executar_query(sql, (nome, modelo, setor, ip))
@@ -94,13 +138,119 @@ def salvar_computador():
     patrimonio = data.get("computer-asset")
     serialnumber = data.get("computer-serial")
     setor = data.get("computer-sector")
+    sistema_operacional = data.get("computer-os")
 
-    sql = "INSERT INTO computadores (marca, modelo, patrimonio, serialnumber, setor) VALUES (%s, %s, %s, %s, %s)"
-    _, erro = executar_query(sql, (marca, modelo, patrimonio, serialnumber, setor))
+    if not all([marca, modelo, patrimonio, serialnumber, setor, sistema_operacional]):
+        return jsonify({"erro": "Todos os campos são obrigatórios!"}), 400
+
+    sql = "INSERT INTO computadores (marca, modelo, patrimonio, serialnumber, setor, sistema_operacional) VALUES (%s, %s, %s, %s, %s, %s)"
+    _, erro = executar_query(sql, (marca, modelo, patrimonio, serialnumber, setor, sistema_operacional))
 
     if erro:
         return jsonify({"erro": erro}), 500
     return jsonify({"mensagem": "Computador salvo com sucesso!"}), 200
+
+@app.route("/salvar_toner", methods=["POST"])
+def salvar_toner():
+    data = request.form
+    print(f"Form data: {data}")
+    modelo = data.get("toner-model")
+    impressora = data.get("toner-impressora")
+    cor = data.get("toner-cor")
+    quantidade_estoque = data.get("toner-quantidade-estoque")
+    quantidade_devolucao = data.get("toner-quantidade-devolucao")
+    toner_id = data.get("toner-id")
+
+    print(f"Parsed data: modelo={modelo}, impressora={impressora}, cor={cor}, estoque={quantidade_estoque}, devolucao={quantidade_devolucao}, id={toner_id}")
+
+    if not all([modelo, impressora, cor, quantidade_estoque, quantidade_devolucao]):
+        return jsonify({"erro": "Todos os campos são obrigatórios!"}), 400
+
+    try:
+        quantidade_estoque = int(quantidade_estoque)
+        quantidade_devolucao = int(quantidade_devolucao)
+    except ValueError:
+        return jsonify({"erro": "Quantidades devem ser números inteiros!"}), 400
+
+    if toner_id:
+        # Atualizar toner existente
+        sql = "UPDATE toners SET modelo = %s, impressora = %s, cor = %s, quantidade_novo = %s, quantidade_usado = %s WHERE id = %s"
+        params = (modelo, impressora, cor, quantidade_estoque, quantidade_devolucao, toner_id)
+        print(f"Executing UPDATE: {sql} with params {params}")
+        _, erro = executar_query(sql, params)
+        mensagem = "Toner atualizado com sucesso!"
+    else:
+        # Inserir novo toner
+        sql = "INSERT INTO toners (modelo, impressora, cor, quantidade_novo, quantidade_usado) VALUES (%s, %s, %s, %s, %s)"
+        params = (modelo, impressora, cor, quantidade_estoque, quantidade_devolucao)
+        print(f"Executing INSERT: {sql} with params {params}")
+        _, erro = executar_query(sql, params)
+        mensagem = "Toner salvo com sucesso!"
+
+    if erro:
+        print(f"Database error: {erro}")
+        return jsonify({"erro": erro}), 500
+    return jsonify({"mensagem": mensagem}), 200
+
+@app.route("/excluir_toner/<int:toner_id>", methods=["DELETE"])
+def excluir_toner(toner_id):
+    sql = "DELETE FROM toners WHERE id = %s"
+    _, erro = executar_query(sql, (toner_id,))
+    
+    if erro:
+        return jsonify({"erro": erro}), 500
+    return jsonify({"mensagem": "Toner excluído com sucesso!"}), 200
+
+@app.route("/excluir_unidadeimagem/<int:unidade_id>", methods=["DELETE"])
+def excluir_unidadeimagem(unidade_id):
+    sql = "DELETE FROM unidadeimagem WHERE id = %s"
+    _, erro = executar_query(sql, (unidade_id,))
+    
+    if erro:
+        return jsonify({"erro": erro}), 500
+    return jsonify({"mensagem": "Unidade de imagem excluída com sucesso!"}), 200
+
+@app.route("/excluir_computador/<int:computador_id>", methods=["DELETE"])
+def excluir_computador(computador_id):
+    sql = "DELETE FROM computadores WHERE id = %s"
+    _, erro = executar_query(sql, (computador_id,))
+    
+    if erro:
+        return jsonify({"erro": erro}), 500
+    return jsonify({"mensagem": "Computador excluído com sucesso!"}), 200
+@app.route("/salvar_unidadeimagem", methods=["POST"])
+def salvar_unidadeimagem():
+    data = request.form
+    modelo = data.get("item-model")
+    quantidade_novo = data.get("item-new-quantity")
+    quantidade_usado = data.get("item-used-quantity")
+    item_id = data.get("item-id")
+
+    if not all([modelo, quantidade_novo, quantidade_usado]):
+        return jsonify({"erro": "Todos os campos são obrigatórios!"}), 400
+
+    try:
+        quantidade_novo = int(quantidade_novo)
+        quantidade_usado = int(quantidade_usado)
+    except ValueError:
+        return jsonify({"erro": "Quantidades devem ser números inteiros!"}), 400
+
+    if item_id:
+        # Atualizar unidade de imagem existente
+        sql = "UPDATE unidadeimagem SET modelo = %s, quantidade_novo = %s, quantidade_usado = %s WHERE id = %s"
+        params = (modelo, quantidade_novo, quantidade_usado, item_id)
+        _, erro = executar_query(sql, params)
+        mensagem = "Unidade de imagem atualizada com sucesso!"
+    else:
+        # Inserir nova unidade de imagem
+        sql = "INSERT INTO unidadeimagem (modelo, quantidade_novo, quantidade_usado) VALUES (%s, %s, %s)"
+        params = (modelo, quantidade_novo, quantidade_usado)
+        _, erro = executar_query(sql, params)
+        mensagem = "Unidade de imagem salva com sucesso!"
+
+    if erro:
+        return jsonify({"erro": erro}), 500
+    return jsonify({"mensagem": mensagem}), 200
 
 @app.route("/listar_impressoras", methods=["GET"])
 def listar_impressoras():
@@ -161,6 +311,46 @@ def excluir_impressora(impressora_id):
     if erro:
         return jsonify({"erro": erro}), 500
     return jsonify({"mensagem": "Impressora excluída com sucesso!"})
+
+@app.route("/atualizar_impressora", methods=["PUT"])
+def atualizar_impressora():
+    data = request.form
+    printer_id = data.get("printer-id")
+    nome = data.get("printer-name")
+    modelo = data.get("printer-model")
+    setor = data.get("printer-sector")
+    ip = data.get("printer-ip")
+
+    if not all([printer_id, nome, modelo, setor, ip]):
+        return jsonify({"erro": "Todos os campos são obrigatórios!"}), 400
+
+    sql = "UPDATE impressoras SET nome = %s, modelo = %s, setor = %s, ip = %s WHERE id = %s"
+    _, erro = executar_query(sql, (nome, modelo, setor, ip, printer_id))
+
+    if erro:
+        return jsonify({"erro": erro}), 500
+    return jsonify({"mensagem": "Impressora atualizada com sucesso!"}), 200
+
+@app.route("/atualizar_computador", methods=["POST"])
+def atualizar_computador():
+    data = request.form
+    item_id = data.get("item-id")
+    marca = data.get("computer-brand")
+    modelo = data.get("computer-model")
+    patrimonio = data.get("computer-asset")
+    serialnumber = data.get("computer-serial")
+    setor = data.get("computer-sector")
+    sistema_operacional = data.get("computer-os")
+
+    if not all([item_id, marca, modelo, patrimonio, serialnumber, setor, sistema_operacional]):
+        return jsonify({"erro": "Todos os campos são obrigatórios!"}), 400
+
+    sql = "UPDATE computadores SET marca = %s, modelo = %s, patrimonio = %s, serialnumber = %s, setor = %s, sistema_operacional = %s WHERE id = %s"
+    _, erro = executar_query(sql, (marca, modelo, patrimonio, serialnumber, setor, sistema_operacional, item_id))
+
+    if erro:
+        return jsonify({"erro": erro}), 500
+    return jsonify({"mensagem": "Computador atualizado com sucesso!"}), 200
 
 
 if __name__ == "__main__":

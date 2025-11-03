@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Equipamentos e Suprimentos de TI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toner.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
@@ -24,60 +25,83 @@
             </ul>
         </nav>
     </header>
-
     <main>
-        <div class="main-content">
+        <div class="content-header">
+            <button id="open-side-menu" class="btn-primary">Adicionar Toner</button>
             <h1>Controle de Estoque de Toners</h1>
-            <div class="inventory-section">
-                <table id="toner-table" class="inventory-table">
+            
+            <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+                <table class="responsive-table">
                     <thead>
                         <tr>
                             <th>Modelo</th>
-                            <th>Novos</th>
-                            <th>Usados</th>
+                            <th>Impressora</th>
+                            <th>Cor</th>
+                            <th>Quantidade em Estoque</th>
+                            <th>Quantidade para Devolução</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="4" class="loading-message">Carregando... A tabela será preenchida em instantes.</td>
-                        </tr>
+                        {% if toners %}
+                            {% for toner in toners %}
+                            <tr>
+                                <td data-label="Modelo">{{ toner.modelo }}</td>
+                                <td data-label="Impressora">{{ toner.impressora }}</td>
+                                <td data-label="Cor">{{ toner.cor }}</td>
+                                <td data-label="Quantidade em Estoque">{{ toner.quantidade_novo }}</td>
+                                <td data-label="Quantidade para Devolução">{{ toner.quantidade_usado }}</td>
+                                <td data-label="Ações">
+                                    <div class="action-buttons">
+                                        <button class="edit-btn" data-id="{{ toner.id }}"><i class="fas fa-edit"></i> Editar</button>
+                                        <button class="delete-toner-btn" data-id="{{ toner.id }}"><i class="fas fa-trash"></i> Excluir</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" style="text-align: center;">Nenhum toner cadastrado.</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
-
-    <!-- Modal para Adicionar/Remover Estoque -->
-    <div id="inventory-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2 id="modal-title"></h2>
-            <form id="inventory-form">
-                <input type="hidden" id="item-id">
-                <input type="hidden" id="item-type">
-                <input type="hidden" id="action-type">
-                
+    <aside id="add-toner-menu" class="side-menu">
+        <div class="side-menu-header">
+            <h2>Adicionar Toner</h2>
+            <button id="close-side-menu" class="close-btn">&times;</button>
+        </div>
+        <div class="side-menu-content">
+            <form id="add-toner-form">
+                <input type="hidden" id="toner-id" name="toner-id">
                 <div class="form-group">
-                    <label for="item-quantity">Quantidade:</label>
-                    <input type="number" id="item-quantity" min="1" value="1" required>
+                    <label for="toner-model">Modelo</label>
+                    <input type="text" id="toner-model" name="toner-model" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="item-condition">Condição:</label>
-                    <select id="item-condition" required>
-                        <option value="new">Novo</option>
-                        <option value="used">Usado</option>
-                    </select>
+                    <label for="toner-impressora">Impressora</label>
+                    <input type="text" id="toner-impressora" name="toner-impressora" required>
                 </div>
-                
-                <div class="form-actions">
-                    <button type="button" id="confirm-action" class="btn-confirm">Confirmar</button>
+                <div class="form-group">
+                    <label for="toner-cor">Cor</label>
+                    <input type="text" id="toner-cor" name="toner-cor" required>
                 </div>
+                <div class="form-group">
+                    <label for="toner-quantidade-estoque">Quantidade em Estoque</label>
+                    <input type="number" id="toner-quantidade-estoque" name="toner-quantidade-estoque" required>
+                </div>
+                <div class="form-group">
+                    <label for="toner-quantidade-devolucao">Quantidade para Devolução</label>
+                    <input type="number" id="toner-quantidade-devolucao" name="toner-quantidade-devolucao" required>
+                </div>
+                <button type="submit" class="btn-primary">Salvar</button>
             </form>
         </div>
-    </div>
-
+    </aside>
+    <div id="overlay" class="overlay"></div>
     <footer class="footer">
         <div class="footer-container">
              <div class="footer-row">
@@ -100,7 +124,110 @@
             </div>
         </div>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const openMenuBtn = document.getElementById('open-side-menu');
+            const closeMenuBtn = document.getElementById('close-side-menu');
+            const sideMenu = document.getElementById('add-toner-menu');
+            const overlay = document.getElementById('overlay');
+            const addTonerForm = document.getElementById('add-toner-form');
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+            const openMenu = () => {
+                sideMenu.classList.add('open');
+                overlay.classList.add('active');
+            };
+
+            const closeMenu = () => {
+                sideMenu.classList.remove('open');
+                overlay.classList.remove('active');
+            };
+
+            openMenuBtn.addEventListener('click', openMenu);
+            closeMenuBtn.addEventListener('click', closeMenu);
+            overlay.addEventListener('click', closeMenu);
+
+            addTonerForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(addTonerForm);
+                const tonerId = document.getElementById('toner-id').value;
+                
+                let url = '/salvar_toner';
+                let method = 'POST';
+
+                // If tonerId exists, it's an update
+                if (tonerId) {
+                    formData.append('toner-id', tonerId);
+                }
+
+                fetch(url, {
+                    method: method,
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.erro) {
+                        alert('Erro ao salvar toner: ' + data.erro);
+                    } else {
+                        alert(data.mensagem);
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na requisição:', error);
+                    alert('Ocorreu um erro na requisição.');
+                });
+            });
+
+            // Edit button functionality
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const tonerId = e.target.dataset.id;
+                    const row = e.target.closest('tr');
+                    const modelo = row.querySelector('[data-label="Modelo"]').textContent;
+                    const impressora = row.querySelector('[data-label="Impressora"]').textContent;
+                    const cor = row.querySelector('[data-label="Cor"]').textContent;
+                    const quantidadeEstoque = row.querySelector('[data-label="Quantidade em Estoque"]').textContent;
+                    const quantidadeDevolucao = row.querySelector('[data-label="Quantidade para Devolução"]').textContent;
+
+                    document.getElementById('toner-id').value = tonerId;
+                    document.getElementById('toner-model').value = modelo;
+                    document.getElementById('toner-impressora').value = impressora;
+                    document.getElementById('toner-cor').value = cor;
+                    document.getElementById('toner-quantidade-estoque').value = quantidadeEstoque;
+                    document.getElementById('toner-quantidade-devolucao').value = quantidadeDevolucao;
+
+                    document.querySelector('#add-toner-menu h2').textContent = 'Editar Toner';
+                    addTonerForm.querySelector('button[type="submit"]').textContent = 'Atualizar';
+
+                    openMenu();
+                });
+            });
+
+            // Delete button functionality
+            document.querySelectorAll('.delete-toner-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const tonerId = e.target.dataset.id;
+                    if (confirm('Tem certeza que deseja excluir este toner?')) {
+                        fetch(`/excluir_toner/${tonerId}`, {
+                            method: 'DELETE'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.erro) {
+                                alert('Erro ao excluir toner: ' + data.erro);
+                            } else {
+                                alert(data.mensagem);
+                                location.reload();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro na requisição:', error);
+                            alert('Ocorreu um erro ao tentar excluir o toner.');
+                        });
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

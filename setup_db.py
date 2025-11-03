@@ -22,6 +22,8 @@ TABLES['toners'] = (
     "CREATE TABLE `toners` ("
     "  `id` int(11) NOT NULL AUTO_INCREMENT,"
     "  `modelo` varchar(255) NOT NULL,"
+    "  `impressora` varchar(255) NOT NULL,"
+    "  `cor` varchar(255) NOT NULL,"
     "  `quantidade_novo` int(11) NOT NULL DEFAULT 0,"
     "  `quantidade_usado` int(11) NOT NULL DEFAULT 0,"
     "  PRIMARY KEY (`id`)"
@@ -44,6 +46,7 @@ TABLES['computadores'] = (
     "  `patrimonio` varchar(255) DEFAULT NULL,"
     "  `serialnumber` varchar(255) DEFAULT NULL,"
     "  `setor` varchar(255) DEFAULT NULL,"
+    "  `sistema_operacional` varchar(255) DEFAULT NULL,"
     "  PRIMARY KEY (`id`)"
     ") ENGINE=InnoDB")
 
@@ -80,6 +83,10 @@ def main():
         for table_name in TABLES:
             table_description = TABLES[table_name]
             try:
+                print(f"Dropping table: {table_name}", end='')
+                cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+                print(" OK")
+
                 print(f"Criando tabela: {table_name}", end='')
                 cursor.execute(table_description)
             except mysql.connector.Error as err:
@@ -95,13 +102,13 @@ def main():
         if cursor.fetchone()[0] == 0:
             print("Populando a tabela 'toners' com dados iniciais...")
             initial_toners = [
-                ('TN-3492', 0, 0),
-                ('TN-3472', 0, 0),
-                ('TN-2370', 0, 0),
-                ('TN-1060', 0, 0),
-                ('TN-750', 0, 0)
+                ('TN-3492', 'Impressora Padrão', 'Preto', 0, 0),
+                ('TN-3472', 'Impressora Padrão', 'Preto', 0, 0),
+                ('TN-2370', 'Impressora Padrão', 'Preto', 0, 0),
+                ('TN-1060', 'Impressora Padrão', 'Preto', 0, 0),
+                ('TN-750', 'Impressora Padrão', 'Preto', 0, 0)
             ]
-            query = "INSERT INTO toners (modelo, quantidade_novo, quantidade_usado) VALUES (%s, %s, %s)"
+            query = "INSERT INTO toners (modelo, impressora, cor, quantidade_novo, quantidade_usado) VALUES (%s, %s, %s, %s, %s)"
             cursor.executemany(query, initial_toners)
             cnx.commit()
             print("Dados inseridos em 'toners'.")
